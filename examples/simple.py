@@ -73,20 +73,23 @@ bundle = [
 
 # flashbots bundles target a specific block, so we target
 # any one of the next 3 blocks by emitting 3 bundles
-block_number = w3.eth.block_number
-for i in range(1, 3):
-    w3.flashbots.send_bundle(bundle, target_block_number=block_number + i)
-print(f"bundle broadcasted at block {block_number}")
+block_number = w3.eth.get_block_number()
+start, end = block_number + 1, block_number + 3
+for target in range(start, end):
+    w3.flashbots.send_bundle(bundle, target_block_number=target)
+
+print(f"bundle broadcasted, target at block range {start} - {end}")
 
 # wait for the transaction to get mined
 while True:
     try:
-        w3.eth.wait_for_transaction_receipt(signed_tx.hash, timeout=1, poll_latency=0.1)
+        block_number = w3.eth.get_block_number()
+        receipt = w3.eth.wait_for_transaction_receipt(signed_tx.hash, timeout=1, poll_latency=0.1)
+        print(f"transaction confirmed at block {receipt['blockNumber']}")
         break
 
     except exceptions.TimeExhausted:
-        if w3.eth.block_number >= (block_number + 3):
+        if block_number >= end:
             print("ERROR: transaction was not mined")
             exit(1)
 
-print(f"transaction confirmed at block {w3.eth.block_number}")
